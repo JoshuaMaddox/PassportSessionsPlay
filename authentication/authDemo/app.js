@@ -27,6 +27,7 @@ app.use(passport.session());
 //Reads the sessions, takes data from the session, then encodes it and puts it 
 //back into the session. Made possible by the data passed into the UserSchema
 //in user.js - UserSchema.plugin(passportLocalMongoose);
+passport.use(new localStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -39,7 +40,11 @@ app.get("/", function(req, res){
    res.render("home"); 
 });
 
-app.get("/secret", function(req, res){
+//When a request comes in for /secret, it will run
+//the middleware function isLoggedIn that checks
+//whether or not the user is logged in. 
+
+app.get("/secret", isLoggedIn, function(req, res){
     res.render("secret");
 })
 
@@ -74,12 +79,35 @@ app.post("/register", function(req, res){
     });//User.register
 })//app.post
 
-//===== Login =====//
+//===== LOGIN =====//
 
 //Shows the login form
 app.get("/login", function(req, res){
     res.render("login");
 });
+//Login Logic
+app.post("/login", passport.authenticate("local", {
+    successRedirect: "/secret",
+    failureRedirect: "/login"
+}), function(req, res){
+    
+});//app.post
+
+//===== LOGOUT =====//
+
+app.get("/logout", function(req, res){
+   req.logout(); 
+   res.redirect("/");
+});
+
+//===== MIDDLEWARE FOR SECRET PAGE =====//
+//Takes 3 arguements request, response, next
+function isLoggedIn(req, res, next){
+    if(req.isAuthenticated()){
+        return next();
+    }
+    res.redirect("/login");
+}
 
 //Start Server
 app.listen(process.env.PORT, process.env.IP, function(){
